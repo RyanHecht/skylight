@@ -64,6 +64,9 @@ export interface Config {
   staleSec: number;
   /** Ease factor toward each fresh fix (0 = snap, 1 = never move). */
   smoothing: number;
+  /** Cap the render loop, frames per second. 0 = uncapped (use display
+   *  refresh rate). Lower this to cut GPU/CPU load (and laptop fan noise). */
+  maxFps: number;
 
   // --- visuals ---
   theme: Theme;
@@ -127,6 +130,7 @@ export const DEFAULT_CONFIG: Config = {
   maxExtrapolationSec: 5,
   staleSec: 20,
   smoothing: 0.18,
+  maxFps: 0,
 
   theme: "ambient",
   palette: {

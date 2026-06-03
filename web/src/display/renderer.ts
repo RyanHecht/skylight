@@ -99,6 +99,8 @@ export class Renderer {
   private w = 0;
   private h = 0;
   private prevFrame = 0;
+  /** Timestamp of the last drawn frame, for the maxFps cap. */
+  private lastDraw = 0;
   /** Current frame time in seconds, for animating props/rotors. */
   private frameT = 0;
 
@@ -121,9 +123,18 @@ export class Renderer {
   start(): void {
     void this.fetchTles();
     setInterval(() => void this.fetchTles(), 3600_000);
-    const loop = () => {
-      this.draw();
+    const loop = (now: number) => {
       this.raf = requestAnimationFrame(loop);
+      // Cap to maxFps: skip this rAF tick if we're ahead of the frame budget.
+      // 0 (or less) means uncapped — draw every rAF tick.
+      const fps = this.getConfig().maxFps;
+      if (fps > 0) {
+        const minInterval = 1000 / fps;
+        // Small slack so we don't perpetually miss the target by a hair.
+        if (now - this.lastDraw < minInterval - 1) return;
+        this.lastDraw = now;
+      }
+      this.draw();
     };
     this.raf = requestAnimationFrame(loop);
   }

@@ -179,6 +179,10 @@ export function Control() {
             <Slider value={cfg.staleSec} min={5} max={60} step={1} unit="s"
               onChange={(v) => set({ staleSec: v })} />
           </Row>
+          <Row label="Max FPS" hint="0 = uncapped · lower cuts fan/CPU">
+            <Slider value={cfg.maxFps} min={0} max={120} step={5} unit="fps"
+              onChange={(v) => set({ maxFps: v })} />
+          </Row>
         </Section>
 
         <Section title="Overlays">
