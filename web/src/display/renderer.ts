@@ -213,8 +213,10 @@ export class Renderer {
     if (tt <= h[0].t) return h[0].m;
     const lastS = h[h.length - 1];
     if (tt >= lastS.t) {
-      // Beyond newest fix — extrapolate gently, capped.
-      const dt = Math.min((tt - lastS.t) / 1000, cfg.maxExtrapolationSec);
+      // Beyond newest fix — keep coasting (dead-reckon) through a dropout,
+      // capped at the coast window so a lost plane doesn't drift forever.
+      const cap = Math.max(cfg.coastSec, cfg.maxExtrapolationSec);
+      const dt = Math.min((tt - lastS.t) / 1000, cap);
       return cfg.interpolate ? deadReckon(lastS.m, lastS.track, lastS.gs, dt) : lastS.m;
     }
     // Find the bracketing pair.
@@ -267,7 +269,11 @@ export class Renderer {
 
     for (const [hex, tr] of this.tracks) {
       const stale = (now - tr.lastSeen) / 1000;
-      if (stale > cfg.staleSec) {
+      // Hold a plane through a sporadic dropout: coast it at full brightness for
+      // `coastSec`, then fade it out and drop it. Keep the drop after the fade so
+      // it never vanishes mid-fade even if staleSec is set below the coast window.
+      const dropSec = Math.max(cfg.staleSec, cfg.coastSec + 1.5);
+      if (stale > dropSec) {
         this.tracks.delete(hex);
         continue;
       }
@@ -275,8 +281,8 @@ export class Renderer {
       const keep = Math.max(cfg.trailSeconds, 6) * 1000 + 4000;
       while (tr.history.length > 2 && now - tr.history[0].t > keep) tr.history.shift();
 
-      // Fade in on spawn, fade out as it goes stale.
-      const target = stale > cfg.staleSec * 0.5 ? 0 : 1;
+      // Fade in on spawn; stay lit while coasting, fade out once coast expires.
+      const target = stale <= cfg.coastSec ? 1 : 0;
       tr.life += (target - tr.life) * Math.min(1, frameDt * 3.5);
 
       if (!tr.hasPos) continue;

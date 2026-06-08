@@ -175,6 +175,10 @@ export function Control() {
             <Slider value={cfg.maxExtrapolationSec} min={0} max={15} step={1} unit="s"
               onChange={(v) => set({ maxExtrapolationSec: v })} />
           </Row>
+          <Row label="Coast thru dropouts" hint="glide bright while signal is lost">
+            <Slider value={cfg.coastSec} min={0} max={30} step={1} unit="s"
+              onChange={(v) => set({ coastSec: v })} />
+          </Row>
           <Row label="Drop after">
             <Slider value={cfg.staleSec} min={5} max={60} step={1} unit="s"
               onChange={(v) => set({ staleSec: v })} />

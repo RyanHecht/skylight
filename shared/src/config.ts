@@ -163,6 +163,14 @@ export interface Config {
   /** Display interpolation toggle (server poll cadence is separate). */
   interpolate: boolean;
   maxExtrapolationSec: number;
+  /**
+   * Coast through radio dropouts: keep an aircraft gliding (dead-reckoned along
+   * its last heading/speed) at full brightness for this many seconds after its
+   * last fix. Smooths over a sporadic receiver that keeps losing and
+   * re-acquiring planes, so they don't blink out and pop back. After the coast
+   * window the glyph fades and is dropped at `staleSec`.
+   */
+  coastSec: number;
   staleSec: number;
   /** Ease factor toward each fresh fix (0 = snap, 1 = never move). */
   smoothing: number;
@@ -233,6 +241,7 @@ export const DEFAULT_CONFIG: Config = {
 
   interpolate: true,
   maxExtrapolationSec: 5,
+  coastSec: 12,
   staleSec: 20,
   smoothing: 0.18,
   maxFps: 0,
