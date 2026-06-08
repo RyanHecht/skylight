@@ -80,6 +80,11 @@ export interface PollerOptions {
  * Merge a primary (radio) list with a secondary (API) list by hex, preferring
  * whichever fix is fresher. Radio is biased a couple seconds so it wins while
  * it's tracking; the API takes over only once the radio fix goes stale.
+ *
+ * A positioned fix always beats a position-less one: indoors the radio often
+ * decodes a plane's messages (altitude/velocity) but never a CPR position pair,
+ * so the local record has no lat/lon. Without this guard that empty radio fix
+ * would shadow the API's positioned fix and the plane would never draw.
  */
 function mergeSources(radio: Aircraft[], api: Aircraft[]): Aircraft[] {
   const byHex = new Map<string, Aircraft>();
@@ -88,6 +93,12 @@ function mergeSources(radio: Aircraft[], api: Aircraft[]): Aircraft[] {
     const existing = byHex.get(r.hex);
     if (!existing) {
       byHex.set(r.hex, r);
+      continue;
+    }
+    const rHasPos = r.lat != null && r.lon != null;
+    const aHasPos = existing.lat != null && existing.lon != null;
+    if (rHasPos !== aHasPos) {
+      byHex.set(r.hex, rHasPos ? r : existing);
       continue;
     }
     const rSeen = (r.seen ?? 0) - 2; // bias toward the local radio
