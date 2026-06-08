@@ -58,6 +58,20 @@ async function fetchJson(url: string): Promise<any> {
   return res.json();
 }
 
+/**
+ * How the API supplements the radio when `supplementApi` is on.
+ *
+ * - "merge"  : full union by hex. The API can add aircraft your antenna never
+ *              heard and can take over a fix once the radio's goes stale. Best
+ *              for completeness (keeps landing aircraft alive).
+ * - "fields" : the radio is the source of truth for *which* aircraft exist and
+ *              *where* they are. The API only backfills fields the local
+ *              receiver didn't decode (callsign, type, registration, …), which
+ *              in turn unlocks route enrichment. No ghost aircraft, no API
+ *              position takeover.
+ */
+export type SupplementMode = "merge" | "fields";
+
 export interface PollerOptions {
   source: DataSource;
   /** dump1090 aircraft.json URL (radio source). */
@@ -68,6 +82,9 @@ export interface PollerOptions {
   /** When source is "radio", also poll the API and merge (keeps landing
    *  aircraft alive when local ADS-B drops them). */
   supplementApi: boolean;
+  /** Strategy for the supplement: union ("merge") vs radio-authoritative
+   *  field backfill ("fields"). Only used when supplementApi is on. */
+  supplementMode: SupplementMode;
   /** API poll cadence when supplementing (slower, to respect rate limits). */
   apiPollMs: number;
   getConfig: () => Config;
@@ -106,6 +123,38 @@ function mergeSources(radio: Aircraft[], api: Aircraft[]): Aircraft[] {
     byHex.set(r.hex, rSeen <= aSeen ? r : existing);
   }
   return [...byHex.values()];
+}
+
+/**
+ * Radio-authoritative supplement. The radio list defines exactly which aircraft
+ * appear and where they sit on the ceiling; the API is consulted only to fill
+ * in non-positional fields the local receiver never decoded for a plane it *is*
+ * already tracking. This is what lets routes show up for aircraft whose
+ * callsign your antenna couldn't pull down (no callsign -> no route lookup),
+ * without inventing ghost aircraft or letting the API nudge a fix off its true
+ * radio position.
+ *
+ * Only `undefined` fields are filled (never `null`), so the on-ground altitude
+ * sentinel and any other deliberate gaps from the radio survive untouched.
+ */
+function supplementFields(radio: Aircraft[], api: Aircraft[]): Aircraft[] {
+  const apiByHex = new Map<string, Aircraft>();
+  for (const a of api) apiByHex.set(a.hex, a);
+  for (const r of radio) {
+    const a = apiByHex.get(r.hex);
+    if (!a) continue;
+    // Identity / metadata the radio may have missed (these unlock enrichment).
+    r.flight ??= a.flight;
+    r.registration ??= a.registration;
+    r.typeCode ??= a.typeCode;
+    r.category ??= a.category;
+    r.squawk ??= a.squawk;
+    // Kinematics that are plain "missing" (not the null ground sentinel).
+    r.gs ??= a.gs;
+    r.track ??= a.track;
+    // Note: lat/lon are intentionally NOT filled — radio owns position.
+  }
+  return radio;
 }
 
 /** Enrichment we've resolved for an aircraft, kept sticky for its session. */
@@ -214,7 +263,15 @@ export class Poller {
       return;
     }
     const supplement = this.o.source === "radio" && this.o.supplementApi;
-    const merged = supplement ? mergeSources(primary, this.lastApi) : primary;
+    const fieldsMode = supplement && this.o.supplementMode === "fields";
+    let merged: Aircraft[];
+    if (!supplement) {
+      merged = primary;
+    } else if (fieldsMode) {
+      merged = supplementFields(primary, this.lastApi);
+    } else {
+      merged = mergeSources(primary, this.lastApi);
+    }
     for (const ac of merged) this.enrich(ac, now);
     this.last = merged;
     this.pruneSticky(now);
@@ -223,7 +280,11 @@ export class Poller {
       ok: true,
       count: merged.length,
       lastOk: now,
-      message: supplement ? `radio + ${this.lastApi.length} via API` : undefined,
+      message: supplement
+        ? fieldsMode
+          ? `radio (+API fields from ${this.lastApi.length})`
+          : `radio + ${this.lastApi.length} via API`
+        : undefined,
     };
     this.o.onSnapshot(now, merged);
     this.o.onStatus(this.status);

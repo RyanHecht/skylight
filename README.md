@@ -157,7 +157,8 @@ sun, moon, and satellites are computed for your coordinates automatically.
 |---|---|---|
 | `DATA_SOURCE` | `radio` | `radio` (dump1090) or `api` (airplanes.live) |
 | `AIRCRAFT_JSON_URL` | `http://localhost:8080/aircraft.json` | dump1090 feed |
-| `SUPPLEMENT_API` | `1` | When on radio, merge the API too (keeps landing aircraft alive) |
+| `SUPPLEMENT_API` | `1` | When on radio, also poll the API (keeps landing aircraft alive) |
+| `SUPPLEMENT_MODE` | `merge` | `merge` (union: API may add aircraft + take over stale fixes) or `fields` (radio owns which aircraft appear and where; API only backfills undecoded info like callsign/type so routes resolve) |
 | `PORT` / `HOST` | `3000` / `0.0.0.0` | HTTP + WebSocket |
 
 ## Architecture

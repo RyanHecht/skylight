@@ -10,7 +10,7 @@ import express from "express";
 import type { DataSource } from "@shared/index.js";
 import { ConfigStore } from "./config-store.js";
 import { RouteEnricher } from "./enrich/routes.js";
-import { Poller } from "./datasource.js";
+import { Poller, type SupplementMode } from "./datasource.js";
 import { Hub } from "./hub.js";
 import { TleStore } from "./tle.js";
 
@@ -29,6 +29,11 @@ const POLL_MS = Number(process.env.POLL_MS ?? 1000);
 const ROUTE_CACHE_HOURS = Number(process.env.ROUTE_CACHE_HOURS ?? 12);
 // When on radio, also poll the API and merge (keeps landing aircraft alive).
 const SUPPLEMENT_API = (process.env.SUPPLEMENT_API ?? "1") !== "0";
+// "merge" = full union (API can add aircraft + take over stale fixes).
+// "fields" = radio owns which aircraft appear and where; API only backfills
+// undecoded fields (callsign/type/reg) so routes can resolve.
+const SUPPLEMENT_MODE: SupplementMode =
+  process.env.SUPPLEMENT_MODE === "fields" ? "fields" : "merge";
 const API_POLL_MS = Number(process.env.API_POLL_MS ?? 4000);
 
 async function main(): Promise<void> {
@@ -60,6 +65,7 @@ async function main(): Promise<void> {
     apiUrlTemplate: API_URL,
     pollMs: POLL_MS,
     supplementApi: SUPPLEMENT_API,
+    supplementMode: SUPPLEMENT_MODE,
     apiPollMs: API_POLL_MS,
     getConfig: () => store.get(),
     enricher,
