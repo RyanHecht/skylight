@@ -110,6 +110,11 @@ function mergeSources(radio: Aircraft[], api: Aircraft[]): Aircraft[] {
 
 /** Enrichment we've resolved for an aircraft, kept sticky for its session. */
 interface StickyEnrichment {
+  /** Last callsign decoded for this hex. Kept so an intermittent receiver that
+   *  drops the callsign field mid-track still resolves (and keeps) its route:
+   *  the adsbdb lookup is keyed on callsign, so without this a route fetched
+   *  just after the callsign flickered out would be stranded uncached-to-hex. */
+  flight?: string;
   typeName?: string;
   airline?: string;
   origin?: string;
@@ -225,6 +230,15 @@ export class Poller {
   }
 
   private enrich(ac: Aircraft, now: number): void {
+    const prev = this.sticky.get(ac.hex);
+
+    // Keep the last-known callsign for this hex. An intermittent receiver often
+    // decodes a plane's position on one sweep but drops the callsign field on
+    // the next; without this the route (looked up by callsign, asynchronously)
+    // could resolve into the cache yet never get re-attached. Restoring it also
+    // stops the flight label from flickering between the callsign and blank.
+    ac.flight = ac.flight ?? prev?.flight;
+
     // Instant table lookups first.
     ac.typeName = lookupType(ac.typeCode);
     ac.airline = lookupAirline(ac.flight);
@@ -249,7 +263,6 @@ export class Poller {
 
     // Sticky merge: once we've resolved something for this hex, never drop it
     // back to undefined on a later snapshot (prevents label flicker).
-    const prev = this.sticky.get(ac.hex);
     ac.typeName = ac.typeName ?? prev?.typeName;
     ac.airline = ac.airline ?? prev?.airline;
     ac.origin = ac.origin ?? prev?.origin;
@@ -262,6 +275,7 @@ export class Poller {
     ac.destLat = ac.destLat ?? prev?.destLat;
     ac.destLon = ac.destLon ?? prev?.destLon;
     this.sticky.set(ac.hex, {
+      flight: ac.flight,
       typeName: ac.typeName,
       airline: ac.airline,
       origin: ac.origin,
