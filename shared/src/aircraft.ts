@@ -7,6 +7,10 @@ export interface Aircraft {
   hex: string;
   /** Callsign, trimmed (e.g. "UAL1234"). */
   flight?: string;
+  /** IATA form of the flight number (e.g. "WN1234"), when resolvable. The
+   *  callsign above is the ICAO form broadcast over ADS-B; this is the
+   *  public/airport-style number people recognize from boarding passes. */
+  flightIata?: string;
 
   lat?: number;
   lon?: number;

@@ -37,6 +37,8 @@ export interface Fonts {
 export interface ShowFields {
   airline: boolean;
   flight: boolean;
+  /** Append the IATA flight number (e.g. "WN1234") next to the ICAO callsign. */
+  iata: boolean;
   type: boolean;
   altitude: boolean;
   speed: boolean;
@@ -270,6 +272,7 @@ export const DEFAULT_CONFIG: Config = {
   showFields: {
     airline: true,
     flight: true,
+    iata: true,
     type: true,
     altitude: true,
     speed: true,

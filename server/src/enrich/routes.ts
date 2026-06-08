@@ -9,6 +9,8 @@ const API = "https://api.adsbdb.com/v0";
 
 interface RouteInfo {
   airline?: string;
+  /** IATA flight number from adsbdb (e.g. "WN1234"), authoritative when present. */
+  callsignIata?: string;
   origin?: string;
   destination?: string;
   originName?: string;
@@ -97,6 +99,7 @@ export class RouteEnricher {
           if (fr) {
             data = {
               airline: fr.airline?.name,
+              callsignIata: fr.callsign_iata || undefined,
               origin: fr.origin?.iata_code ?? fr.origin?.icao_code,
               destination: fr.destination?.iata_code ?? fr.destination?.icao_code,
               originName: fr.origin?.municipality,

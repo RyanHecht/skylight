@@ -19,6 +19,7 @@ function fmtIn(ms: number): string {
 const FIELD_LABELS: Record<keyof ShowFields, string> = {
   airline: "Airline",
   flight: "Flight",
+  iata: "IATA #",
   type: "Type",
   altitude: "Altitude",
   speed: "Speed",

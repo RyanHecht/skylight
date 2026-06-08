@@ -801,7 +801,10 @@ export class Renderer {
   private labelLines(cfg: Config, ac: Aircraft): { text: string; kind: "title" | "sub" }[] {
     const f = cfg.showFields;
     const out: { text: string; kind: "title" | "sub" }[] = [];
-    const title = f.flight ? ac.flight ?? ac.hex.toUpperCase() : ac.airline;
+    let title = f.flight ? ac.flight ?? ac.hex.toUpperCase() : ac.airline;
+    if (title && f.iata && ac.flightIata && ac.flightIata !== title) {
+      title = `${title} · ${ac.flightIata}`;
+    }
     if (title) out.push({ text: title, kind: "title" });
 
     const sub: string[] = [];
@@ -938,7 +941,11 @@ export class Renderer {
     }
     ctx.font = `300 34px ${cfg.fonts.label}`;
     ctx.fillStyle = rgba([245, 247, 255], v.alpha);
-    ctx.fillText(ac.flight ?? ac.hex.toUpperCase(), x, y);
+    let dpTitle = ac.flight ?? ac.hex.toUpperCase();
+    if (cfg.showFields.iata && ac.flightIata && ac.flightIata !== dpTitle) {
+      dpTitle = `${dpTitle} · ${ac.flightIata}`;
+    }
+    ctx.fillText(dpTitle, x, y);
     try {
       ctx.letterSpacing = "0.5px";
     } catch {

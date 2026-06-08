@@ -4,7 +4,7 @@
 
 import type { Aircraft, Config, DataSource } from "@shared/index.js";
 import type { SourceStatus } from "@shared/index.js";
-import { lookupAirline, lookupType } from "./enrich/tables.js";
+import { lookupAirline, lookupType, iataFlightFromCallsign } from "./enrich/tables.js";
 import type { RouteEnricher } from "./enrich/routes.js";
 
 /** Raw readsb-style aircraft record (subset we use). */
@@ -164,6 +164,7 @@ interface StickyEnrichment {
    *  the adsbdb lookup is keyed on callsign, so without this a route fetched
    *  just after the callsign flickered out would be stranded uncached-to-hex. */
   flight?: string;
+  flightIata?: string;
   typeName?: string;
   airline?: string;
   origin?: string;
@@ -308,6 +309,7 @@ export class Poller {
     const e = this.o.enricher.enrichSync(ac.hex, ac.flight, now);
     if (e.route) {
       ac.airline = ac.airline ?? e.route.airline;
+      ac.flightIata = ac.flightIata ?? e.route.callsignIata;
       ac.origin = e.route.origin ?? ac.origin;
       ac.destination = e.route.destination ?? ac.destination;
       ac.originName = e.route.originName ?? ac.originName;
@@ -322,8 +324,12 @@ export class Poller {
       ac.registration = ac.registration ?? e.aircraft.registration;
     }
 
+    // Fall back to a table-derived IATA flight number when adsbdb had none.
+    ac.flightIata = ac.flightIata ?? iataFlightFromCallsign(ac.flight);
+
     // Sticky merge: once we've resolved something for this hex, never drop it
     // back to undefined on a later snapshot (prevents label flicker).
+    ac.flightIata = ac.flightIata ?? prev?.flightIata;
     ac.typeName = ac.typeName ?? prev?.typeName;
     ac.airline = ac.airline ?? prev?.airline;
     ac.origin = ac.origin ?? prev?.origin;
@@ -337,6 +343,7 @@ export class Poller {
     ac.destLon = ac.destLon ?? prev?.destLon;
     this.sticky.set(ac.hex, {
       flight: ac.flight,
+      flightIata: ac.flightIata,
       typeName: ac.typeName,
       airline: ac.airline,
       origin: ac.origin,
