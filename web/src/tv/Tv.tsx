@@ -174,7 +174,7 @@ export function Tv() {
         </div>
         <div className="tv-clock">
           {mse.ok && fps != null ? `${fps} FPS · ` : ""}
-          {mse.ok ? "" : "MJPEG · "}SFO · {clock}
+          {mse.ok ? "" : "MJPEG · "}MCO · {clock}
         </div>
       </header>
 

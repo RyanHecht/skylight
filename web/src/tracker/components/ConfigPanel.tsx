@@ -162,7 +162,7 @@ export function ConfigPanel({
           {(["sfo", "fixed"] as const).map((m) => (
             <button key={m} className={`segment ${config.home.mode === m ? "active" : ""}`}
               onClick={() => conn.send({ type: "patchTracker", patch: { home: { mode: m } } })}>
-              {m === "sfo" ? "toward SFO" : "fixed az"}
+              {m === "sfo" ? "toward MCO" : "fixed az"}
             </button>
           ))}
         </div>
