@@ -9,6 +9,9 @@ JSON_DIR="${JSON_DIR:-/tmp/adsb-json}"
 PORT="${PORT:-8080}"
 LAT="${LAT:-37.6213}"
 LON="${LON:--122.379}"
+# RTL-SDR tuner gain in dB. The RTL-SDR Blog V4 tops out at 49.6 dB; max gain
+# helps weak indoor reception decode positions (set GAIN=agc for the tuner AGC).
+GAIN="${GAIN:-49.6}"
 
 # Use the rtl-sdr-blog build we installed to /usr/local.
 export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig:${PKG_CONFIG_PATH:-}"
@@ -34,6 +37,12 @@ echo "Run the tracker with:"
 echo "    AIRCRAFT_JSON_URL=http://localhost:$PORT/aircraft.json DATA_SOURCE=radio pnpm dev"
 echo
 
+GAIN_ARGS=(--gain "$GAIN")
+if [ "$GAIN" = "agc" ]; then
+  GAIN_ARGS=(--enable-agc)
+fi
+
 exec "$SRC/dump1090" --device-type rtlsdr \
+  "${GAIN_ARGS[@]}" \
   --lat "$LAT" --lon "$LON" \
   --write-json "$JSON_DIR" --write-json-every 1 --quiet
