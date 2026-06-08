@@ -4,10 +4,29 @@
   <em>Project the aircraft passing overhead onto your ceiling, in real time — an X-ray through the roof.</em>
 </p>
 
-<p align="center">
-  <a href="https://skylightceiling.com"><b>🛰️ Get notified when I launch on a crowdfunding platform → skylightceiling.com</b></a>
-  <br><sub>A ready-made kit is coming. Join the waitlist for early access &amp; launch pricing.</sub>
-</p>
+## Changes in this fork
+
+User-facing tweaks made on top of upstream:
+
+- **Planes stop blinking out on a flaky receiver** — a new *coast through dropouts*
+  window keeps an aircraft gliding at full brightness for a few seconds after its last
+  fix (tunable from your phone), so a sporadic indoor antenna no longer makes planes
+  flicker and pop back.
+- **Aircraft actually draw indoors** — when the radio decodes a plane's messages but
+  never a position, the web API's real position is now used instead of being shadowed by
+  the empty local fix.
+- **Steadier labels and routes** — the last-known callsign is remembered per aircraft, so
+  flight labels and origin/destination stop flickering when the receiver briefly drops the
+  callsign.
+- **IATA flight numbers** — the public flight number from your boarding pass (e.g. `WN2710`)
+  now shows next to the ICAO callsign; toggle it with the new *IATA #* field.
+- **`SUPPLEMENT_MODE` for the web-API supplement** — choose `merge` (union: the API can add
+  planes your antenna missed) or `fields` (the radio owns which planes appear and where; the
+  API only backfills callsign/type so routes resolve, with no ghost aircraft).
+- **Adjustable RTL-SDR gain** — `GAIN` on the dump1090 helper (default max 49.6 dB, or `agc`)
+  to squeeze more range out of weak indoor reception.
+- **Centered on Orlando (KMCO)** — the bundled airport, runways, and labels target MCO
+  instead of SFO.
 
 <p align="center">
   <img src="docs/skylight.png" alt="Skylight projected on a ceiling: aircraft, trails, SFO runways and the night sky" width="100%">
@@ -33,30 +52,6 @@ for your location and time. Tune everything from your phone.
 
 > Reference build is centered on **San Francisco International (SFO)**, but it works
 > anywhere — set your coordinates (and swap the runway data) and you're flying.
-
-## Changes in this fork
-
-User-facing tweaks made on top of upstream:
-
-- **Planes stop blinking out on a flaky receiver** — a new *coast through dropouts*
-  window keeps an aircraft gliding at full brightness for a few seconds after its last
-  fix (tunable from your phone), so a sporadic indoor antenna no longer makes planes
-  flicker and pop back.
-- **Aircraft actually draw indoors** — when the radio decodes a plane's messages but
-  never a position, the web API's real position is now used instead of being shadowed by
-  the empty local fix.
-- **Steadier labels and routes** — the last-known callsign is remembered per aircraft, so
-  flight labels and origin/destination stop flickering when the receiver briefly drops the
-  callsign.
-- **IATA flight numbers** — the public flight number from your boarding pass (e.g. `WN2710`)
-  now shows next to the ICAO callsign; toggle it with the new *IATA #* field.
-- **`SUPPLEMENT_MODE` for the web-API supplement** — choose `merge` (union: the API can add
-  planes your antenna missed) or `fields` (the radio owns which planes appear and where; the
-  API only backfills callsign/type so routes resolve, with no ghost aircraft).
-- **Adjustable RTL-SDR gain** — `GAIN` on the dump1090 helper (default max 49.6 dB, or `agc`)
-  to squeeze more range out of weak indoor reception.
-- **Centered on Orlando (KMCO)** — the bundled airport, runways, and labels target MCO
-  instead of SFO.
 
 ## Features
 
